@@ -22,6 +22,13 @@ import 'package:html/dom.dart';
 // depth - an integer representing the depth of the page in the recursion
 // links - a list of strings containing all the unique links found on the page
 // The class should have a constructor that takes values for each of the properties
+class Page {
+  final String url;
+  final int depth;
+  final List<String> links;
+
+  Page({required this.url, required this.depth, required this.links});
+}
 
 //**************************************************************************************************
 // crawlPage(String url, int depth) is a function that crawls a single web page and extracts the links
@@ -38,6 +45,36 @@ import 'package:html/dom.dart';
 // Extract the links using your extractLinks() function
 // Return a Page object with all the properties set
 // If an exception occurs, print an error and return an empty Page object (as above)
+Future<Page> crawlPage(String url, int depth) async {
+  // If depth is negative, return an empty Page object
+  if (depth < 0) {
+    return Page(url: url, depth: depth, links: []);
+  }
+
+  try {
+    // Get the URL using the http package get() function
+    final response = await http.get(Uri.parse(url));
+
+    // If the response status code is not OK, print an error and return an empty Page object
+    if (response.statusCode != HttpStatus.ok) {
+      print(' There was an error fetching the URL: $url (Status code: ${response.statusCode})');
+      return Page(url: url, depth: depth, links: []);
+    }
+
+    // Parse the body of the response into a document object
+    final document = parse(response.body);
+
+    // Extract the links using the extractLinks() function
+    final links = extractLinks(document, url);
+
+    // Return a Page object with all properties set
+    return Page(url: url, depth: depth, links: links);
+  } catch (e) {
+    // If an exception occurs, print an error and return an empty Page object
+    print('Error: Exception occurred while fetching $url ($e)');
+    return Page(url: url, depth: depth, links: []);
+  }
+}
 
 //**************************************************************************************************
 // extractLinks(Document document, String baseUrl) is a function that finds all the html anchor
@@ -49,6 +86,19 @@ import 'package:html/dom.dart';
 // Document querySelectorAll() function and consider the following list methods: map, where, toSet, toList
 //--------------------------------------------------------------------------------------------------
 // TODO: 4. (40 pts) Implement the extractLinks() function as specified above
+List<String> extractLinks(Document document, String baseUrl) {
+  // Find all anchor elements in the document
+  List<Element> anchorElements = document.querySelectorAll('a');
+
+  // Extract the 'href' attribute from each anchor element, filter out non-http links, and remove duplicates
+  List<String> links = anchorElements
+      .map((element) => element.attributes['href'] ?? '')
+      .where((href) => href.startsWith('http'))
+      .toSet()
+      .toList();
+
+  return links;
+}
 
 //**************************************************************************************************
 // crawl(String url,  int maxDepth) is the top-level function called from the main slinky app. It
@@ -74,5 +124,44 @@ import 'package:html/dom.dart';
 // return the visited map as a sorted list
 //--------------------------------------------------------------------------------------------------
 // TODO: 5. (70 pts) Implement the crawl function as described above
+Future<List<Page>> crawl(String url, int maxDepth) async {
+  // Map to keep track of visited links
+  final Map<String, Page> visited = {};
+  // List to keep track of pages to visit
+  final List<Future<Page>> queue = [];
+  // Start by crawling the initial URL
+  queue.add(crawlPage(url, maxDepth));
 
+  while (queue.isNotEmpty) {
+    // Wait for all future pages in the queue to complete
+    final completedPages = await Future.wait(queue);
+    // Clear the queue for the next iteration
+    queue.clear();
+
+    for (final page in completedPages) {
+      final normalizedUrl = page.url.toLowerCase();
+      // If the page's URL has already been visited, skip it
+      if (visited.containsKey(normalizedUrl)) {
+        continue;
+      }
+      // Mark the page as visited
+      visited[normalizedUrl] = page;
+
+      // If the page's depth is not negative, crawl its links
+      if (page.depth > 0) {
+        for (final link in page.links) {
+          final normalizedLink = link.toLowerCase();
+          // If the link has not been visited, add it to the queue
+          if (!visited.containsKey(normalizedLink)) {
+            queue.add(crawlPage(link, page.depth - 1));
+          }
+        }
+      }
+    }
+  }
+
+  // Return the visited pages as a sorted list
+  return visited.values.toList()
+    ..sort((a, b) => a.url.compareTo(b.url));
+}
 // Total points: 215

@@ -33,7 +33,9 @@ Future<void> main(List<String> arguments) async {
   final links = await utils.crawl(argResults.rest[0], int.parse(argResults[optionDepth]));
 
   // TODO: 1. (5 pts) Print the returned links
-
+  for (var link in links) {
+    print(link);
+  }
   exit(0);
 }
 
