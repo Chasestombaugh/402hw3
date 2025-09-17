@@ -9,6 +9,20 @@ void main() {
     crawlPage('google.com', 2);
   });
 
+  /** Page tests */
+  group('Page', () {
+    test('confirming the constructor stores fields', () {
+      final p = Page(
+        url: 'https://example.org/',
+        depth: 3,
+        links: ['http://a.com', 'http://b.com']
+      );
+      expect(p.url, 'https://example.org/');
+      expect(p.depth, 3);
+      expect(p.links, ['http://a.com', 'http://b.com']);
+    });
+  });
+
   /** Extract Links */
   group('extractLinks', () {
     test ('keeps only absolute http(s) links and dedupes', () {
@@ -17,15 +31,21 @@ void main() {
         <a href="http://a.com/x">A-duplicate</a>
         <a href="https://b.com/">B</a>
         <a href="/relative">relative</a>
-        <a>no href</a>
+        <a>no href</a>S
         ''');
         final links = extractLinks(doc, 'http://example.org/');
         expect(links.toSet(), {'http://a.com/x', 'https://b.com/'});
     });
+
+    test('empty document yields an empty list', () {
+      final doc = parse('');
+      final links = extractLinks(doc, 'http://example.org/');
+      expect(links, isEmpty);
+    });
   });
 
   /** Crawl Page mine */
-  group('crawPage', () {
+  group('crawlPage', () {
     test('negative depth returns empty links', () async {
       final page = await crawlPage('http://example.org/', -1);
       expect(page.url, 'http://example.org/');
@@ -42,5 +62,7 @@ void main() {
     });
 
 }
+
+/** Crawl tests */
 
 // Total points: 30
