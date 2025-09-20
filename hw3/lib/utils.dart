@@ -10,7 +10,8 @@
 //----------------------------------------------------------------------------
 import 'dart:async';
 import 'package:http/http.dart' as http;
-import 'package:http_status/http_status.dart';
+//import 'package:http_status/http_status.dart';
+import 'dart:io' show HttpStatus;
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart';
 
@@ -28,6 +29,9 @@ class Page {
   final List<String> links;
 
   Page({required this.url, required this.depth, required this.links});
+  
+  // this actually prints the webpage strings, comment out to return just "Instance of 'Page'"
+  String toString() => url;
 }
 
 //**************************************************************************************************
@@ -45,6 +49,10 @@ class Page {
 // Extract the links using your extractLinks() function
 // Return a Page object with all the properties set
 // If an exception occurs, print an error and return an empty Page object (as above)
+
+String _ensureHttp(String url) =>
+  (url.startsWith('http://') || url.startsWith('https://')) ? url : 'https://$url';
+
 Future<Page> crawlPage(String url, int depth) async {
   // If depth is negative, return an empty Page object
   if (depth < 0) {
@@ -53,7 +61,7 @@ Future<Page> crawlPage(String url, int depth) async {
 
   try {
     // Get the URL using the http package get() function
-    final response = await http.get(Uri.parse(url));
+    final response = await http.get(Uri.parse(_ensureHttp(url)));
 
     // If the response status code is not OK, print an error and return an empty Page object
     if (response.statusCode != HttpStatus.ok) {
@@ -92,11 +100,7 @@ List<String> extractLinks(Document document, String baseUrl) {
 
   // Extract the 'href' attribute from each anchor element, filter out non-http links, and remove duplicates
   List<String> links = anchorElements
-      .map((element) => element.attributes['href'] ?? '')
-      .where((href) => href.startsWith('http'))
-      .toSet()
-      .toList();
-
+      .map((element) => element.attributes['href'] ?? '').where((href) => href.startsWith('http')).toSet().toList();
   return links;
 }
 
@@ -144,14 +148,13 @@ Future<List<Page>> crawl(String url, int maxDepth) async {
       if (visited.containsKey(normalizedUrl)) {
         continue;
       }
-      // Mark the page as visited
+
       visited[normalizedUrl] = page;
 
-      // If the page's depth is not negative, crawl its links
       if (page.depth > 0) {
         for (final link in page.links) {
           final normalizedLink = link.toLowerCase();
-          // If the link has not been visited, add it to the queue
+          
           if (!visited.containsKey(normalizedLink)) {
             queue.add(crawlPage(link, page.depth - 1));
           }
@@ -160,7 +163,6 @@ Future<List<Page>> crawl(String url, int maxDepth) async {
     }
   }
 
-  // Return the visited pages as a sorted list
   return visited.values.toList()
     ..sort((a, b) => a.url.compareTo(b.url));
 }
