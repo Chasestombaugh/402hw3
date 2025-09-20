@@ -29,7 +29,7 @@ class Page {
   final List<String> links;
 
   Page({required this.url, required this.depth, required this.links});
-  
+
   // this actually prints the webpage strings, comment out to return just "Instance of 'Page'"
   String toString() => url;
 }
@@ -51,7 +51,9 @@ class Page {
 // If an exception occurs, print an error and return an empty Page object (as above)
 
 String _ensureHttp(String url) =>
-  (url.startsWith('http://') || url.startsWith('https://')) ? url : 'https://$url';
+    (url.startsWith('http://') || url.startsWith('https://'))
+    ? url
+    : 'https://$url';
 
 Future<Page> crawlPage(String url, int depth) async {
   // If depth is negative, return an empty Page object
@@ -65,7 +67,9 @@ Future<Page> crawlPage(String url, int depth) async {
 
     // If the response status code is not OK, print an error and return an empty Page object
     if (response.statusCode != HttpStatus.ok) {
-      print(' There was an error fetching the URL: $url (Status code: ${response.statusCode})');
+      print(
+        ' There was an error fetching the URL: $url (Status code: ${response.statusCode})',
+      );
       return Page(url: url, depth: depth, links: []);
     }
 
@@ -100,7 +104,10 @@ List<String> extractLinks(Document document, String baseUrl) {
 
   // Extract the 'href' attribute from each anchor element, filter out non-http links, and remove duplicates
   List<String> links = anchorElements
-      .map((element) => element.attributes['href'] ?? '').where((href) => href.startsWith('http')).toSet().toList();
+      .map((element) => element.attributes['href'] ?? '')
+      .where((href) => href.startsWith('http'))
+      .toSet()
+      .toList();
   return links;
 }
 
@@ -154,7 +161,7 @@ Future<List<Page>> crawl(String url, int maxDepth) async {
       if (page.depth > 0) {
         for (final link in page.links) {
           final normalizedLink = link.toLowerCase();
-          
+
           if (!visited.containsKey(normalizedLink)) {
             queue.add(crawlPage(link, page.depth - 1));
           }
@@ -163,7 +170,7 @@ Future<List<Page>> crawl(String url, int maxDepth) async {
     }
   }
 
-  return visited.values.toList()
-    ..sort((a, b) => a.url.compareTo(b.url));
+  return visited.values.toList()..sort((a, b) => a.url.compareTo(b.url));
 }
+
 // Total points: 215

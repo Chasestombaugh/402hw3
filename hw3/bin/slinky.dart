@@ -24,13 +24,16 @@ Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
     ..addOption(optionDepth, abbr: 'd', defaultsTo: "5");
   ArgResults argResults = parser.parse(arguments);
-  
+
   if (argResults.rest.length == 0) {
     print("A url must be specified");
     exit(1);
   }
 
-  final links = await utils.crawl(argResults.rest[0], int.parse(argResults[optionDepth]));
+  final links = await utils.crawl(
+    argResults.rest[0],
+    int.parse(argResults[optionDepth]),
+  );
 
   // TODO: 1. (5 pts) Print the returned links
   for (var link in links) {
@@ -38,7 +41,5 @@ Future<void> main(List<String> arguments) async {
   }
   exit(0);
 }
-
-
 
 // Total points: 5
